@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2>Admin Dashboard</h2>
+  <a href="{{ url_for('main.investment_history') }}" class="btn btn-outline-secondary mb-3">View Investment History</a>
+
+  <a href="{{ url_for('main.create_user') }}" class="btn btn-primary mb-4">+ Create New Investor</a>
+
+  <!-- Pending Investments -->
+  <h4>Pending Investments</h4>
+  <ul class="list-group">
+    {% for i in pending %}
+      <li class="list-group-item">
+        <strong>{{ i.investor.username }}</strong> submitted ${{ i.amount }} – {{ i.comment }}
+        <br>
+        <a class="btn btn-success btn-sm mt-2" href="{{ url_for('main.approve', investment_id=i.id) }}">Approve</a>
+        <a class="btn btn-danger btn-sm mt-2" href="{{ url_for('main.reject', investment_id=i.id) }}">Reject</a>
+      </li>
+    {% else %}
+      <li class="list-group-item text-muted">No pending investments.</li>
+    {% endfor %}
+  </ul>
+
+  <!-- Approved Investments -->
+  <h4 class="mt-5">Approved Investments</h4>
+  <ul class="list-group">
+    {% for i in history %}
+      <li class="list-group-item">
+        <strong>{{ i.investor.username }}</strong> – ${{ i.amount }} (Approved {{ i.date_approved.strftime('%Y-%m-%d') }})
+        <br><small>{{ i.comment }}</small>
+      </li>
+    {% else %}
+      <li class="list-group-item text-muted">No approved investments yet.</li>
+    {% endfor %}
+  </ul>
+
+  <!-- Charts Section -->
+  <div class="row mt-5">
+    <!-- Ownership Pie Chart -->
+    <div class="col-md-6 col-sm-12 mb-4">
+      <h5>Investor Ownership Breakdown</h5>
+      <canvas id="ownershipChart" class="w-100" style="max-width: 100%; height: 250px;"></canvas>
+    </div>
+
+    <!-- Allocation Pie Chart -->
+    <div class="col-md-6 col-sm-12 mb-4">
+      <h5>Fund Allocation Breakdown</h5>
+      <canvas id="allocationChart" class="w-100" style="max-width: 100%; height: 250px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Include Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const totalFund = {{ total_contributions | float }};
+
+    // Ownership Chart
+    new Chart(document.getElementById('ownershipChart').getContext('2d'), {
+      type: 'pie',
+      data: {
+        labels: {{ ownership_data | map(attribute='username') | list | tojson }},
+        datasets: [{
+          label: 'Ownership %',
+          data: {{ ownership_data | map(attribute='percentage') | list | tojson }},
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': ' + context.raw.toFixed(2) + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+
+    // Allocation Chart
+    const allocationLabels = {{ fund_allocations | map(attribute='name') | list | tojson }};
+    const allocationAmounts = {{ fund_allocations | map(attribute='amount') | list | tojson }};
+    const allocationPercentages = allocationAmounts.map(a => ((a / totalFund) * 100).toFixed(2));
+
+    new Chart(document.getElementById('allocationChart').getContext('2d'), {
+      type: 'pie',
+      data: {
+        labels: allocationLabels,
+        datasets: [{
+          label: 'Allocation %',
+          data: allocationPercentages,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': ' + context.raw + '%';
+              }
+            }
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  </script>
+
+  <!-- Total Fund Display -->
+  <h4 class="mt-5">Total Approved Fund: ${{ total_contributions }}</h4>
+
+  <!-- Add Allocation Form -->
+  <form method="POST" action="{{ url_for('main.create_allocation') }}" class="mb-4">
+    <div class="row">
+      <div class="col-md-4 col-sm-12 mb-2">
+        <input type="text" name="name" placeholder="Category (e.g. Crypto)" class="form-control" required>
+      </div>
+      <div class="col-md-4 col-sm-12 mb-2">
+        <input type="number" step="0.01" name="amount" placeholder="Amount in $" class="form-control" required>
+      </div>
+      <div class="col-md-4 col-sm-12 mb-2">
+        <button class="btn btn-success w-100">Allocate Fund</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Investor Overview Table -->
+  <h4 class="mt-5">All Investors</h4>
+  <table class="table table-bordered">
+    <thead class="thead-light">
+      <tr>
+        <th>Username</th>
+        <th>Total Approved ($)</th>
+        <th>Ownership %</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in investors %}
+        <tr>
+          <td>{{ user.username }}</td>
+          <td>${{ user.total_approved_investments() }}</td>
+          <td>
+            {% for o in ownership_data %}
+              {% if o.username == user.username %}
+                {{ o.percentage }}%
+              {% endif %}
+            {% endfor %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete {{ user.username }}?');">
+              <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4">No investors yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+{% endblock %}

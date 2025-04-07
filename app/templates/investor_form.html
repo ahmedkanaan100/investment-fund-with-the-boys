@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Submit Investment</h2>
+
+  <form method="POST">
+    <div class="mb-3">
+      <label>Amount ($)</label>
+      <input type="number" name="amount" class="form-control" step="0.01" required>
+    </div>
+
+    <div class="mb-3">
+      <label>Comment</label>
+      <textarea name="comment" class="form-control" placeholder="Optional notes..." rows="3"></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label>Date (optional)</label>
+      <input type="date" name="date_submitted" class="form-control">
+    </div>
+
+    <button class="btn btn-primary w-100">Submit Investment</button>
+  </form>
+</div>
+{% endblock %}

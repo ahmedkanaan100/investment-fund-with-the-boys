@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Approved Investment History</h2>
+
+  <form method="GET" class="mb-3">
+    <div class="row">
+      <div class="col-md-3">
+        <select name="user_id" class="form-control" onchange="this.form.submit()">
+          <option value="all">All Investors</option>
+          {% for user in users %}
+            <option value="{{ user.id }}" {% if selected_user_id == user.id|string %}selected{% endif %}>
+              {{ user.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="start_date" value="{{ start_date or '' }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="end_date" value="{{ end_date or '' }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100">Filter</button>
+      </div>
+    </div>
+  </form>
+
+  <table class="table table-striped mt-4">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Amount ($)</th>
+        <th>Date Approved</th>
+        <th>Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in approved %}
+        <tr>
+          <td>{{ i.investor.username }}</td>
+          <td>${{ i.amount }}</td>
+          <td>{{ i.date_approved.strftime('%Y-%m-%d') if i.date_approved }}</td>
+          <td>{{ i.comment or '' }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4" class="text-muted">No approved investments match the filters.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

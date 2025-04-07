@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2>Welcome, {{ current_user.username }}</h2>
+  <p class="text-muted">Summary of your investments and the fund</p>
+
+  <!-- Submit Investment Button -->
+  <div class="mb-4">
+    <a href="{{ url_for('main.submit_investment') }}" class="btn btn-success">+ Submit New Investment</a>
+  </div>
+
+  <!-- Responsive Charts Row -->
+  <div class="row">
+    <div class="col-md-6 col-sm-12 mb-4">
+      <h5 class="text-center">Ownership Breakdown</h5>
+      <canvas id="ownershipChart"></canvas>
+    </div>
+    <div class="col-md-6 col-sm-12 mb-4">
+      <h5 class="text-center">Fund Allocation</h5>
+      <canvas id="allocationChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Ownership Table -->
+  <h4>Investor List & Ownership %</h4>
+  <table class="table table-striped table-bordered">
+    <thead class="table-light">
+      <tr>
+        <th>Username</th>
+        <th>Ownership %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for investor in ownership_data %}
+      <tr>
+        <td>{{ investor.username }}</td>
+        <td>{{ investor.percentage }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Approved Investments Section -->
+  <h4 class="mt-5">Your Approved Investments</h4>
+  <ul class="list-group">
+    {% for i in investments %}
+    <li class="list-group-item">
+      ${{ i.amount }} – Approved on {{ i.date_approved.strftime('%Y-%m-%d') }}
+      <br><small>{{ i.comment }}</small>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted">No approved investments yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ownershipCtx = document.getElementById('ownershipChart').getContext('2d');
+  new Chart(ownershipCtx, {
+    type: 'pie',
+    data: {
+      labels: {{ ownership_data | map(attribute='username') | list | tojson }},
+      datasets: [{
+        label: 'Ownership %',
+        data: {{ ownership_data | map(attribute='percentage') | list | tojson }},
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  const allocationCtx = document.getElementById('allocationChart').getContext('2d');
+  new Chart(allocationCtx, {
+    type: 'pie',
+    data: {
+      labels: {{ fund_allocations | map(attribute='name') | list | tojson }},
+      datasets: [{
+        label: 'Allocation %',
+        data: {{ fund_allocations | map(attribute='percentage') | list | tojson }},
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+</script>
+
+{% endblock %}
